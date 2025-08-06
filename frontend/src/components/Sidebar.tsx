@@ -22,7 +22,11 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList }) => {
 				onClick={() => setVisible((v) => !v)}
 				aria-label={visible ? "Hide sidebar" : "Show sidebar"}
 			>
-				{visible ? <FiX size={24} /> : <FiMenu size={24} />}
+				{visible ? (
+					<FiX size={24} className='text-white dark:text-black' />
+				) : (
+					<FiMenu size={24} className='text-white dark:text-black' />
+				)}
 			</button>
 
 			{/* Sidebar */}
