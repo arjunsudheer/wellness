@@ -1,5 +1,6 @@
 import Sidebar from "./components/Sidebar";
 import AIChatWindow from "./components/AIChatWindow";
+import ToDoElement from "./components/ToDoElement";
 
 function App() {
 	const todoLists = [
@@ -15,6 +16,7 @@ function App() {
 					throw new Error("Function not implemented.");
 				}}
 			/>
+			<ToDoElement />
 			<AIChatWindow />
 		</>
 	);
