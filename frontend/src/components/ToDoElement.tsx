@@ -20,45 +20,49 @@ const ToDoElement: React.FC<ToDoElementProps> = ({ initialText = "", initialDate
 	return (
 		<div
 			className={`
-                flex items-center w-1/2 mx-auto my-2 p-3 rounded-lg shadow
+                flex w-1/2 mx-auto my-2 p-3 rounded-lg shadow
                 bg-gray-100 dark:bg-gray-800 transition-opacity
                 ${completed ? "opacity-50" : "opacity-100"}
             `}
 		>
-			{/* Editable Text */}
-			<input
-				type='text'
-				placeholder='Enter task...'
-				value={text}
-				onChange={(e) => setText(e.target.value)}
-				className={`
-                    flex-grow
-                    w-[70%]
-                    bg-transparent border-none outline-none
-                    text-lg px-2
-                    ${completed ? "line-through" : ""}
-                    ${isOverdue ? "text-red-600 dark:text-red-400" : "text-black dark:text-white"}
-                    transition-colors
-                `}
-				disabled={completed}
-			/>
+			{/* Text Section */}
+			<div className='flex items-center w-[60%] pr-2'>
+				<input
+					type='text'
+					placeholder='Enter task...'
+					value={text}
+					onChange={(e) => setText(e.target.value)}
+					className={`
+                        w-full bg-transparent border-none outline-none
+                        text-lg
+                        ${completed ? "line-through" : ""}
+                        ${
+													isOverdue
+														? "text-red-600 dark:text-red-400"
+														: "text-black dark:text-white"
+												}
+                        transition-colors
+                    `}
+					disabled={completed}
+				/>
+			</div>
 
-			{/* Date Picker */}
-			<div className='w-[20%] flex justify-center items-center'>
+			{/* Date Picker Section */}
+			<div className='flex items-center w-[30%] px-2'>
 				<DatePicker
 					selected={date}
 					onChange={(d: Date | null) => {
 						if (d) setDate(d);
 					}}
 					dateFormat='yyyy-MM-dd'
-					className='bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1 border border-gray-300 dark:border-gray-600'
+					className='w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-2 py-1 border border-gray-300 dark:border-gray-600'
 					disabled={completed}
 					calendarClassName='dark:bg-gray-800 dark:text-white'
 				/>
 			</div>
 
-			{/* Checkbox */}
-			<div className='w-[10%] flex justify-center items-center'>
+			{/* Checkbox Section */}
+			<div className='flex items-center w-[10%] pl-2 justify-center'>
 				<button
 					onClick={() => setCompleted((c) => !c)}
 					className={`
