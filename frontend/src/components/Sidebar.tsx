@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FiMenu, FiX } from "react-icons/fi";
+import { FiMenu, FiX, FiTrash2 } from "react-icons/fi";
 
 type TodoList = {
 	id: string;
@@ -8,11 +8,23 @@ type TodoList = {
 
 type Props = {
 	todoLists: TodoList[];
-	onAddTodoList: () => void;
+	onAddTodoList: (name: string) => void;
+	onDeleteTodoList: (id: string) => void;
 };
 
-const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList }) => {
+const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }) => {
 	const [visible, setVisible] = useState(true);
+	const [showPopup, setShowPopup] = useState(false);
+	const [newListName, setNewListName] = useState("");
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (newListName.trim()) {
+			onAddTodoList(newListName.trim());
+			setNewListName("");
+			setShowPopup(false);
+		}
+	};
 
 	return (
 		<>
@@ -42,9 +54,23 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList }) => {
 						{todoLists.map((todo) => (
 							<div
 								key={todo.id}
-								className='py-2 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer text-gray-800 dark:text-gray-200'
+								className='flex items-center justify-between py-2 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
 							>
-								{todo.name}
+								<span className='text-gray-800 dark:text-gray-200'>{todo.name}</span>
+								<button
+									onClick={() => onDeleteTodoList && onDeleteTodoList(todo.id)}
+									className='ml-2 p-1 rounded-full transition-colors'
+									aria-label='Delete To-Do List'
+								>
+									<FiTrash2
+										size={20}
+										className='
+                                            text-black dark:text-white
+                                            hover:text-red-600
+                                            transition-colors
+                                        '
+									/>
+								</button>
 							</div>
 						))}
 					</div>
@@ -53,12 +79,48 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList }) => {
 					<div className='h-[10%] flex items-center justify-center border-t border-gray-200 dark:border-gray-700 px-4'>
 						<button
 							className='w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded transition-colors dark:bg-green-500 dark:hover:bg-green-600'
-							onClick={onAddTodoList}
+							onClick={() => setShowPopup(true)}
 						>
 							Add To-Do List
 						</button>
 					</div>
 				</aside>
+			)}
+
+			{/* Popup */}
+			{showPopup && (
+				<div className='fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40'>
+					<div className='relative bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-sm p-6 flex flex-col'>
+						{/* Close Button */}
+						<button
+							className='absolute top-3 right-3 text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+							onClick={() => setShowPopup(false)}
+							aria-label='Close'
+						>
+							<FiX size={24} />
+						</button>
+						<h3 className='text-lg font-semibold mb-4 text-gray-900 dark:text-white text-center'>
+							New To-Do List
+						</h3>
+						<form onSubmit={handleSubmit} className='flex flex-col flex-1'>
+							<input
+								type='text'
+								value={newListName}
+								onChange={(e) => setNewListName(e.target.value)}
+								placeholder='Enter list name...'
+								className='mb-6 px-4 py-2 rounded border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none'
+								autoFocus
+							/>
+							<div className='flex-1' />
+							<button
+								type='submit'
+								className='mx-auto bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded transition-colors dark:bg-green-500 dark:hover:bg-green-600'
+							>
+								Submit
+							</button>
+						</form>
+					</div>
+				</div>
 			)}
 		</>
 	);
