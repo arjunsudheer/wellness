@@ -1,15 +1,11 @@
 import React, { useState } from "react";
 import { FiMenu, FiX, FiTrash2 } from "react-icons/fi";
-
-type TodoList = {
-	id: string;
-	name: string;
-};
+import axios from "axios";
 
 type Props = {
-	todoLists: TodoList[];
-	onAddTodoList: (name: string) => void;
-	onDeleteTodoList: (id: string) => void;
+	todoLists: Map<number, string>;
+	onAddTodoList: (id: number, name: string) => void;
+	onDeleteTodoList: (id: number) => void;
 };
 
 const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }) => {
@@ -20,7 +16,20 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (newListName.trim()) {
-			onAddTodoList(newListName.trim());
+			// Find the max id and increment
+			const ids = Array.from(todoLists.keys());
+			const nextId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+			onAddTodoList(nextId, newListName.trim());
+
+			// Send POST request to backend to add new To-Do List
+			axios
+				.post("http://localhost:8080/addToDoList", {
+					name: newListName.trim(),
+				})
+				.catch((error) => {
+					console.error("Error adding To-Do List:", error);
+				});
+
 			setNewListName("");
 			setShowPopup(false);
 		}
@@ -51,14 +60,14 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }
 
 					{/* To-Do Lists */}
 					<div className='flex-1 overflow-y-auto px-4 py-2 h-[80%]'>
-						{todoLists.map((todo) => (
+						{Array.from(todoLists.entries()).map(([id, name]) => (
 							<div
-								key={todo.id}
+								key={id}
 								className='flex items-center justify-between py-2 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
 							>
-								<span className='text-gray-800 dark:text-gray-200'>{todo.name}</span>
+								<span className='text-gray-800 dark:text-gray-200'>{name}</span>
 								<button
-									onClick={() => onDeleteTodoList && onDeleteTodoList(todo.id)}
+									onClick={() => onDeleteTodoList(id)}
 									className='ml-2 p-1 rounded-full transition-colors'
 									aria-label='Delete To-Do List'
 								>
