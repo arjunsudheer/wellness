@@ -6,9 +6,17 @@ type Props = {
 	todoLists: Map<number, string>;
 	onAddTodoList: (id: number, name: string) => void;
 	onDeleteTodoList: (id: number) => void;
+	onSelectToDoList: (name: string) => void;
+	activeList: number | null;
 };
 
-const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }) => {
+const Sidebar: React.FC<Props> = ({
+	todoLists,
+	onAddTodoList,
+	onDeleteTodoList,
+	onSelectToDoList,
+	activeList,
+}) => {
 	const [visible, setVisible] = useState(true);
 	const [showPopup, setShowPopup] = useState(false);
 	const [newListName, setNewListName] = useState("");
@@ -24,6 +32,7 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }
 			// Send POST request to backend to add new To-Do List
 			axios
 				.post("http://localhost:8080/addToDoList", {
+					id: String(nextId),
 					name: newListName.trim(),
 				})
 				.catch((error) => {
@@ -63,23 +72,37 @@ const Sidebar: React.FC<Props> = ({ todoLists, onAddTodoList, onDeleteTodoList }
 						{Array.from(todoLists.entries()).map(([id, name]) => (
 							<div
 								key={id}
-								className='flex items-center justify-between py-2 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
+								className={`flex items-center justify-between py-2 px-2 rounded cursor-pointer
+                                    ${
+																			activeList === id
+																				? "bg-blue-100 dark:bg-blue-900 font-bold"
+																				: "hover:bg-gray-100 dark:hover:bg-gray-800"
+																		}
+                                `}
 							>
-								<span className='text-gray-800 dark:text-gray-200'>{name}</span>
-								<button
-									onClick={() => onDeleteTodoList(id)}
-									className='ml-2 p-1 rounded-full transition-colors'
-									aria-label='Delete To-Do List'
+								<span
+									className='text-gray-800 dark:text-gray-200'
+									onClick={() => onSelectToDoList(name)}
 								>
-									<FiTrash2
-										size={20}
-										className='
-                                            text-black dark:text-white
-                                            hover:text-red-600
-                                            transition-colors
-                                        '
-									/>
-								</button>
+									{name}
+								</span>
+								{/* Do not allow the default "My Tasks" to do group to be deleted */}
+								{id != 0 && (
+									<button
+										onClick={() => onDeleteTodoList(id)}
+										className='ml-2 p-1 rounded-full transition-colors'
+										aria-label='Delete To-Do List'
+									>
+										<FiTrash2
+											size={20}
+											className='
+												text-black dark:text-white
+												hover:text-red-600
+												transition-colors
+											'
+										/>
+									</button>
+								)}
 							</div>
 						))}
 					</div>
