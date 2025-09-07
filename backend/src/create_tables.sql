@@ -8,5 +8,5 @@ CREATE TABLE ToDoLists (
     name VARCHAR(255) NOT NULL UNIQUE,
     dueDate DATE,
     status VARCHAR(9) CHECK (status IN ('Active', 'Completed', 'Overdue')),
-    belongsTo INTEGER REFERENCES ToDoGroups(id) ON DELETE CASCADE
+    belongsTo INTEGER REFERENCES ToDoGroups(id) NOT NULL ON DELETE CASCADE
 );

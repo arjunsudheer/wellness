@@ -1,18 +1,39 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { format } from "date-fns";
 
 type ToDoElementProps = {
+	id: number;
 	initialText?: string;
 	initialDate?: string;
+	completed: boolean;
+	onUpdate: (id: number, name: string, date: string, completed: boolean) => void;
+	parseLocalDate: (dateStr: string) => Date;
 };
 
-const ToDoElement: React.FC<ToDoElementProps> = ({ initialText = "", initialDate = "" }) => {
+const ToDoElement: React.FC<ToDoElementProps> = ({
+	id,
+	initialText = "",
+	initialDate = "",
+	completed,
+	onUpdate,
+	parseLocalDate,
+}) => {
+	// State to manage the text, date, and completion status of the todo item
 	const [text, setText] = useState(initialText);
-	const [date, setDate] = useState<Date>(initialDate ? new Date(initialDate) : new Date());
-	const [completed, setCompleted] = useState(false);
+	const [date, setDate] = useState<Date>(initialDate ? parseLocalDate(initialDate) : new Date());
 
-	// Determine if overdue
+	useEffect(() => {
+		// Debounce the onUpdate call to avoid excessive updates
+		const debounceTimeout = setTimeout(() => {
+			onUpdate(id, text, format(date, "yyyy-MM-dd"), completed);
+		}, 500);
+
+		return () => clearTimeout(debounceTimeout);
+	}, [text, date, completed]);
+
+	// Determine if the todo item is overdue
 	const isOverdue =
 		!completed &&
 		date.setHours(0, 0, 0, 0) < new Date(new Date().toDateString()).setHours(0, 0, 0, 0);
@@ -64,7 +85,9 @@ const ToDoElement: React.FC<ToDoElementProps> = ({ initialText = "", initialDate
 			{/* Checkbox Section */}
 			<div className='flex items-center w-[10%] pl-2 justify-center'>
 				<button
-					onClick={() => setCompleted((c) => !c)}
+					onClick={() => {
+						onUpdate(id, text, format(date, "yyyy-MM-dd"), !completed);
+					}}
 					className={`
                         w-8 h-8 rounded-full border-2 flex items-center justify-center
                         ${
