@@ -2,6 +2,7 @@ package com.arjunsudheer.backend;
 
 import java.sql.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,7 +41,7 @@ public class ToDoListController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
 
-        String query = "SELECT id, name FROM ToDoGroups";
+        String query = "SELECT id, name FROM todogroups";
         Map<Integer, String> groups = new HashMap<>();
 
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
@@ -57,48 +57,45 @@ public class ToDoListController {
     }
 
     @GetMapping("/getToDoItems")
-    public ResponseEntity<String> getToDoItemsByGroup(@RequestAttribute String group) {
+    public ResponseEntity<List<Map<String, Object>>> getToDoItemsByGroup(@RequestParam int id) {
         if (this.conn == null) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
 
-        String query;
-        if (group == null || group.trim().isEmpty()) {
-            query = "SELECT * FROM ToDoLists WHERE belongsTo IS NULL";
-        } else {
-            query = "SELECT * FROM ToDoLists WHERE belongsTo = (SELECT id FROM ToDoGroups WHERE name = ?)";
-        }
+        String query = "SELECT * FROM todolists WHERE belongsto = ? ORDER BY dueDate ASC";
+
+        List<Map<String, Object>> items = new java.util.ArrayList<>();
 
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
-            // Set the group_id parameter in the query
-            pstmt.setString(1, group);
-
+            pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
 
-            Map<String, Object> response = new HashMap<>();
             while (rs.next()) {
-                response.put("id", rs.getInt("id"));
-                response.put("name", rs.getString("name"));
-                response.put("dueDate", rs.getDate("dueDate"));
-                response.put("status", rs.getString("status"));
-                response.put("belongsTo", rs.getInt("belongsTo"));
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", rs.getInt("id"));
+                item.put("name", rs.getString("name"));
+                item.put("date", rs.getDate("dueDate") != null ? rs.getDate("dueDate").toString() : "");
+                item.put("completed", "Completed".equals(rs.getString("status")));
+                item.put("belongsTo", String.valueOf(rs.getInt("belongsTo")));
+                items.add(item);
             }
-            return ResponseEntity.ok(response.toString());
+            return ResponseEntity.ok(items);
         } catch (SQLException e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error executing query.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
     @PostMapping("/addToDoList")
     public ResponseEntity<String> addToDoList(@RequestBody Map<String, String> payload) {
+        String idStr = payload.get("id");
         String name = payload.get("name");
 
         if (this.conn == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
         }
 
-        String query = "INSERT INTO ToDoGroups (name) VALUES (?)";
+        String query = "INSERT INTO todogroups VALUES (?, ?)";
 
         // Set default values if not provided
         if (name == null || name.trim().isEmpty()) {
@@ -106,7 +103,8 @@ public class ToDoListController {
         }
 
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
-            pstmt.setString(1, name);
+            pstmt.setInt(1, Integer.parseInt(idStr));
+            pstmt.setString(2, name);
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -121,27 +119,45 @@ public class ToDoListController {
     }
 
     @PostMapping("/addToDoItem")
-    public ResponseEntity<String> addToDoItem(@RequestAttribute ToDoLists toDoList) {
+    public ResponseEntity<String> addToDoItem(@RequestBody Map<String, String> payload) {
         if (this.conn == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
         }
 
-        String query = "INSERT INTO ToDoLists (name, dueDate, status, belongsTo) VALUES (?, ?, ?, ?)";
+        String name = payload.get("name");
+        String dueDate = payload.get("dueDate");
+        String status = payload.get("status");
+        String belongsTo = payload.get("belongsTo");
 
-        // Set default values if not provided
-        if (toDoList.getBelongsTo() == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Task name is required.");
+        // Validate required fields
+        if (name == null || name.trim().isEmpty() ||
+                dueDate == null || dueDate.trim().isEmpty() ||
+                status == null || status.trim().isEmpty() ||
+                belongsTo == null || belongsTo.trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing required fields.");
         }
 
+        // Validate date format
+        try {
+            Date.valueOf(dueDate);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid date format. Use YYYY-MM-DD.");
+        }
+
+        if (!status.equals("Active") && !status.equals("Completed") && !status.equals("Overdue")) {
+            status = "Active";
+        }
+
+        String query = "INSERT INTO todolists (name, dueDate, status, belongsto) VALUES (?, ?, ?, ?)";
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
-            pstmt.setString(0, toDoList.getName());
-            pstmt.setDate(1, Date.valueOf(toDoList.getDueDate()));
-            pstmt.setString(2, toDoList.getStatus());
-            pstmt.setInt(3, toDoList.getBelongsTo());
+            pstmt.setString(1, name);
+            pstmt.setDate(2, Date.valueOf(dueDate));
+            pstmt.setString(3, status);
+            pstmt.setInt(4, Integer.parseInt(belongsTo));
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Creating to-do list failed.");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Creating to-do item failed.");
             }
 
             return ResponseEntity.status(HttpStatus.CREATED).body("To-Do Item created");
@@ -152,13 +168,17 @@ public class ToDoListController {
     }
 
     @PatchMapping("/updateToDoItem")
-    public ResponseEntity<String> updateStatus(@RequestAttribute int id, @RequestAttribute String name,
-            @RequestAttribute String dueDate, @RequestAttribute String status) {
+    public ResponseEntity<String> updateStatus(@RequestBody Map<String, String> payload) {
         if (this.conn == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
         }
 
-        String query = "UPDATE ToDoLists SET name = ?, dueDate = ?, status = ? WHERE id = ?";
+        String idStr = payload.get("id");
+        String name = payload.get("name");
+        String dueDate = payload.get("dueDate");
+        String status = payload.get("status");
+
+        String query = "UPDATE todolists SET name = ?, dueDate = ?, status = ? WHERE id = ?";
 
         // Validate inputs
         if (name == null || name.trim().isEmpty()) {
@@ -182,7 +202,7 @@ public class ToDoListController {
             pstmt.setString(1, name);
             pstmt.setDate(2, Date.valueOf(dueDate));
             pstmt.setString(3, status);
-            pstmt.setInt(4, id);
+            pstmt.setInt(4, Integer.parseInt(idStr));
 
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
@@ -196,23 +216,21 @@ public class ToDoListController {
         }
     }
 
-    @DeleteMapping("/deleteToDoItem")
-    public ResponseEntity<String> deleteToDoListItem(@RequestAttribute int id) {
+    @DeleteMapping("/deleteCompletedToDoItems")
+    public ResponseEntity<String> deleteToDoListItem() {
         if (this.conn == null) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
         }
 
-        String query = "DELETE FROM ToDoLists WHERE id = ?";
+        String query = "DELETE FROM ToDoLists WHERE status = 'Completed'";
 
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
-            pstmt.setInt(1, id);
-
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows == 0) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("To-Do List item not found.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No completed To-Do List items were found.");
             }
 
-            return ResponseEntity.ok("To-Do List item deleted successfully.");
+            return ResponseEntity.ok("Completed To-Do List items deleted successfully.");
         } catch (SQLException e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error executing query.");
@@ -225,8 +243,24 @@ public class ToDoListController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database connection error.");
         }
 
-        String query = "DELETE FROM ToDoGroups WHERE id = ?";
+        // Do not delete the default group "My Tasks" with id 0
+        if (id == 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cannot delete the default To-Do Group.");
+        }
 
+        // First delete all to-do items associated with this group
+        String deleteItemsQuery = "DELETE FROM ToDoLists WHERE belongsto = ?";
+        try (PreparedStatement pstmt = this.conn.prepareStatement(deleteItemsQuery)) {
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting associated to-do items.");
+        }
+
+        // Then delete the to-do group itself
+        String query = "DELETE FROM ToDoGroups WHERE id = ?";
         try (PreparedStatement pstmt = this.conn.prepareStatement(query)) {
             pstmt.setInt(1, id);
 
