@@ -28,7 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
-		<sk.version>1.4.4-RC1</sk.version>
+		<semantickernel.version>1.4.4-RC1</semantickernel.version>
 	</properties>
 
 	<dependencyManagement>
@@ -36,7 +36,7 @@
 			<dependency>
 				<groupId>com.microsoft.semantic-kernel</groupId>
 				<artifactId>semantickernel-bom</artifactId>
-				<version>${sk.version}</version>
+				<version>${semantickernel.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -65,9 +65,10 @@
 			<groupId>com.microsoft.semantic-kernel</groupId>
 			<artifactId>semantickernel-api</artifactId>
 		</dependency>
+		
 		<dependency>
 			<groupId>com.microsoft.semantic-kernel</groupId>
-			<artifactId>semantickernel-aiservices-openai</artifactId>
+			<artifactId>semantickernel-aiservices-google</artifactId>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
