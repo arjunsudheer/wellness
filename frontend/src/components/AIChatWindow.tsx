@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { FiMessageSquare, FiX } from "react-icons/fi";
+import axios from "axios";
 
 const AIChatWindow: React.FC = () => {
 	const [input, setInput] = useState("");
@@ -20,9 +21,13 @@ const AIChatWindow: React.FC = () => {
 		const userMessage = { sender: "user" as const, text: input };
 		setMessages((prev) => [...prev, userMessage]);
 		setInput("");
-		setTimeout(() => {
-			setMessages((prev) => [...prev, { sender: "ai", text: "This is a simulated AI response." }]);
-		}, 800);
+		try {
+			const res = await axios.post("http://localhost:8080/ai-chat", { prompt: input });
+			setMessages((prev) => [...prev, { sender: "ai", text: res.data.response }]);
+		} catch (error) {
+			setMessages((prev) => [...prev, { sender: "ai", text: "Error contacting AI backend." }]);
+			console.error("AI chat error:", error);
+		}
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
