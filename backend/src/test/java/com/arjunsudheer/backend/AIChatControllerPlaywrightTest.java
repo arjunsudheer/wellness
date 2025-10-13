@@ -71,17 +71,17 @@ public class AIChatControllerPlaywrightTest {
     void testAIChatEndpoint() {
         String testMessage = "Add a new task called \"Math Homework\" to the list \"My Tasks\".";
 
-        // 1. Locate the input field and type the message.
+        // Locate the input field and type the message.
         Locator inputField = page.locator(CHAT_INPUT);
         // Ensure the input field is ready before filling
         inputField.waitFor(new Locator.WaitForOptions().setTimeout(TIMEOUT));
         inputField.fill(testMessage);
 
-        // 2. Click the send button.
+        // Click the send button.
         page.locator(SEND_BUTTON).click();
 
-        // 3. Wait for the AI response element to appear AND contain text.
-        // We use .first() to target the newest response if there are others.
+        // Wait for the AI response element to appear AND contain text.
+        // Use .first() to target the newest response if there are others.
         Locator responseLocator = page.locator(CHAT_RESPONSE).first();
 
         // Wait for the response element to become visible
@@ -91,10 +91,10 @@ public class AIChatControllerPlaywrightTest {
 
         page.waitForTimeout(TIMEOUT);
 
-        // 4. Retrieve the response text.
+        // Retrieve the response text.
         String response = responseLocator.textContent();
 
-        // 5. Assert the response is not null and not empty.
+        // Assert the response is not null and not empty.
         assertNotNull(response, "The AI response should not be null.");
         assertFalse(response.trim().isEmpty(), "The AI response should not be empty.");
 
