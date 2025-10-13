@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { FiMessageSquare, FiX } from "react-icons/fi";
 import axios from "axios";
 
-const AIChatWindow: React.FC = () => {
+interface AIChatWindowProps {
+	onReload: () => void;
+}
+
+const AIChatWindow: React.FC<AIChatWindowProps> = ({ onReload }) => {
 	const [input, setInput] = useState("");
 	const [messages, setMessages] = useState<{ sender: "user" | "ai"; text: string }[]>([]);
 	const [visible, setVisible] = useState(true);
@@ -24,6 +28,9 @@ const AIChatWindow: React.FC = () => {
 		try {
 			const res = await axios.post("http://localhost:8080/ai-chat", { prompt: input });
 			setMessages((prev) => [...prev, { sender: "ai", text: res.data.response }]);
+			if (res.data.reload) {
+				onReload();
+			}
 		} catch (error) {
 			setMessages((prev) => [...prev, { sender: "ai", text: "Error contacting AI backend." }]);
 			console.error("AI chat error:", error);
@@ -69,17 +76,20 @@ const AIChatWindow: React.FC = () => {
 						{messages.map((msg, idx) => (
 							<div
 								key={idx}
-								className={`mb-3 flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}
+								className={`
+                                mb-3 flex chat-message
+                                ${msg.sender === "user" ? "justify-end" : "justify-start"}
+                            `}
 							>
 								<span
 									className={`
-                                        inline-block px-4 py-2 rounded-2xl max-w-[70%] break-words
-                                        ${
-																					msg.sender === "user"
-																						? "bg-green-100 dark:bg-green-800 text-gray-900 dark:text-gray-100"
-																						: "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-																				}
-                                    `}
+                                    inline-block px-4 py-2 rounded-2xl max-w-[70%] break-words
+                                    ${
+																			msg.sender === "user"
+																				? "bg-green-100 dark:bg-green-800 text-gray-900 dark:text-gray-100"
+																				: "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 chat-response"
+																		}
+                                `}
 								>
 									{msg.text}
 								</span>
@@ -98,28 +108,30 @@ const AIChatWindow: React.FC = () => {
 							}}
 						>
 							<textarea
+								id='chat-input'
 								value={input}
 								onChange={handleInputChange}
 								onKeyDown={handleKeyDown}
 								rows={1}
 								placeholder='Type your message...'
 								className='
-                                    flex-1 resize-none rounded-2xl px-4 py-2
-                                    bg-gray-100 dark:bg-gray-800
-                                    border border-gray-300 dark:border-gray-700
-                                    text-gray-900 dark:text-gray-100
-                                    focus:outline-none focus:ring-2 focus:ring-blue-400
-                                    min-h-[40px] max-h-[120px]
-                                '
+                                flex-1 resize-none rounded-2xl px-4 py-2
+                                bg-gray-100 dark:bg-gray-800
+                                border border-gray-300 dark:border-gray-700
+                                text-gray-900 dark:text-gray-100
+                                focus:outline-none focus:ring-2 focus:ring-blue-400
+                                min-h-[40px] max-h-[120px]
+                            '
 							/>
 							<button
+								id='send-button'
 								type='submit'
 								disabled={!input.trim()}
 								className={`
-                                    bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600
-                                    text-white rounded-full w-10 h-10 flex items-center justify-center
-                                    transition-colors disabled:opacity-50 disabled:cursor-not-allowed
-                                `}
+                                bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600
+                                text-white rounded-full w-10 h-10 flex items-center justify-center
+                                transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                            `}
 								aria-label='Send'
 							>
 								<svg width='20' height='20' viewBox='0 0 20 20' fill='none'>
