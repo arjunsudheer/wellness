@@ -23,6 +23,42 @@ function App() {
 	const [overdueTasks, setOverdueTasks] = useState<TodoElement[]>([]);
 	const [completedTasks, setCompletedTasks] = useState<TodoElement[]>([]);
 
+	const refreshData = () => {
+		// Re-fetch the list of To-Do groups
+		axios
+			.get("http://localhost:8080/getToDoLists")
+			.then((response) => {
+				const lists = new Map<number, string>();
+				Object.entries(response.data).forEach(([id, name]) => {
+					lists.set(Number(id), name as string);
+				});
+				setTodoLists(lists);
+			})
+			.catch((error) => {
+				console.error("Error fetching To-Do Lists:", error);
+			});
+
+		// Re-fetch the items for the currently active list
+		axios
+			.get("http://localhost:8080/getToDoItems", { params: { id: activeList } })
+			.then((response) => {
+				const todoItems = new Array<TodoElement>();
+				response.data.forEach((item: TodoElement) => {
+					todoItems.push({
+						id: item.id,
+						name: item.name,
+						date: item.date,
+						completed: item.completed,
+						belongsTo: item.belongsTo,
+					});
+				});
+				setTodoItems(todoItems);
+			})
+			.catch((error) => {
+				console.error("Error fetching To-Do Items:", error);
+			});
+	};
+
 	// Helper to parse "YYYY-MM-DD" as local date
 	const parseLocalDate = (dateStr: string) => {
 		const [year, month, day] = dateStr.split("-").map(Number);
@@ -318,7 +354,7 @@ function App() {
 					</div>
 				</div>
 			)}
-			<AIChatWindow />
+			<AIChatWindow onReload={refreshData} />
 		</>
 	);
 }
