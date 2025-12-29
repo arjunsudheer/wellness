@@ -5,9 +5,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -17,22 +18,34 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 public class ToDoListController {
+    @Value("${datasource.url}")
+    private String dbUrl;
+
+    @Value("${datasource.username}")
+    private String dbUsername;
+
+    @Value("${datasource.password}")
+    private String dbPassword;
+    
     private Connection conn;
-    private Statement st;
 
-    public ToDoListController() {
+    @Autowired
+    public ToDoListController(
+        @Value("${datasource.url}") String dbUrl,
+        @Value("${datasource.username}") String dbUsername,
+        @Value("${datasource.password}") String dbPassword
+    ) {
         try {
-            // Initialize PostgreSQL JDBC driver to connect to the courseplanner database
-            this.conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/motivaitor", "worker",
-                    "pass");
-
-            this.st = this.conn.createStatement();
+            this.conn = DriverManager.getConnection(dbUrl, dbUsername, dbPassword);
         } catch (SQLException e) {
-            System.out.println("Unable to load the driver class.");
-            return;
+            throw new RuntimeException("Database connection failed", e);
         }
+    }
+
+    @GetMapping("/")
+    public String index() {
+        return "Backend is running and ToDoListController is active!";
     }
 
     @GetMapping("/getToDoLists")
@@ -208,6 +221,7 @@ public class ToDoListController {
             if (affectedRows == 0) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("To-Do List item not found.");
             }
+
 
             return ResponseEntity.ok("To-Do List item updated successfully.");
         } catch (SQLException e) {

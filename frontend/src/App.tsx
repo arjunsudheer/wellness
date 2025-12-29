@@ -65,7 +65,7 @@ function App() {
 		return new Date(year, month - 1, day);
 	};
 
-	// Fetch ToDoLists from backend once on mount
+	// Fetch ToDoLists and handle initial routing
 	useEffect(() => {
 		axios
 			.get("http://localhost:8080/getToDoLists")
@@ -75,12 +75,27 @@ function App() {
 					lists.set(Number(id), name as string);
 				});
 				setTodoLists(lists);
+
+				const params = new URLSearchParams(window.location.search);
+				const listIdFromUrl = params.get("listId");
+
+				if (listIdFromUrl && listIdFromUrl !== "0") {
+					const targetId = Number(listIdFromUrl);
+					setActiveList(targetId);
+					
+					axios.get("http://localhost:8080/getToDoItems", { params: { id: targetId } })
+						.then(res => {
+							setTodoItems(res.data);
+							window.history.replaceState({}, document.title, window.location.pathname);
+						})
+						.catch(err => console.error(err));
+				} else {
+					handleSelectToDoList("My Tasks");
+				}
 			})
 			.catch((error) => {
-				console.error("Error fetching To-Do Lists:", error);
+				console.error("Error during initial load:", error);
 			});
-
-		handleSelectToDoList("My Tasks");
 	}, []);
 
 	useEffect(() => {
@@ -126,7 +141,6 @@ function App() {
 	};
 
 	const handleSelectToDoList = (name: string) => {
-		// Find the id of the selected list
 		const found = Array.from(todoLists.entries()).find(([, n]) => n === name);
 		const selectedId = found ? found[0] : activeList;
 		setActiveList(selectedId);
@@ -164,31 +178,20 @@ function App() {
 
 	const handleAddTask = () => {
 		if (!newTaskName.trim() || !newTaskDate) return;
-		const nextId = todoItems.length > 0 ? Math.max(...todoItems.map((t) => t.id)) + 1 : 1;
 
 		const status = isOverdue(newTaskDate, false) ? "Overdue" : "Active";
 
-		const newTask: TodoElement = {
-			id: nextId,
-			name: newTaskName.trim(),
-			date: newTaskDate,
-			completed: false,
-			belongsTo: activeList.toString(),
-		};
-
-		// Send POST request to backend to add new To-Do Item
 		axios
 			.post("http://localhost:8080/addToDoItem", {
-				name: newTask.name,
-				dueDate: newTask.date,
+				name: newTaskName.trim(),
+				dueDate: newTaskDate,
 				status: status,
-				belongsTo: newTask.belongsTo,
+				belongsTo: activeList.toString(),
 			})
 			.then(() => {
-				setTodoItems([...todoItems, newTask]);
-				setShowAddTaskPopup(false);
-				setNewTaskName("");
-				setNewTaskDate("");
+				const currentUrl = new URL(window.location.origin + window.location.pathname);
+				currentUrl.searchParams.set("listId", activeList.toString());
+				window.location.href = currentUrl.toString();
 			})
 			.catch((error) => {
 				console.error("Error adding To-Do Item:", error);
@@ -211,7 +214,6 @@ function App() {
 				status: status,
 			})
 			.then(() => {
-				// Update the item in todoItems state
 				setTodoItems((prev) =>
 					prev.map((item) =>
 						item.id === id ? { ...item, name: text, date: date, completed: completed } : item
