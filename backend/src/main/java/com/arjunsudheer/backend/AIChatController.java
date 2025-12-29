@@ -8,14 +8,13 @@ import com.microsoft.semantickernel.orchestration.InvocationReturnMode;
 import com.microsoft.semantickernel.orchestration.ToolCallBehavior;
 import com.microsoft.semantickernel.plugin.KernelPlugin;
 import com.microsoft.semantickernel.plugin.KernelPluginFactory;
-import com.microsoft.semantickernel.services.chatcompletion.AuthorRole;
 import com.microsoft.semantickernel.services.chatcompletion.ChatCompletionService;
 import com.microsoft.semantickernel.services.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.services.chatcompletion.ChatMessageContent;
 
-import org.apache.logging.log4j.message.Message;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,8 +54,17 @@ public class AIChatController {
                 }
         }
 
+        @GetMapping("/ai-chat/status")
+        public String status() {
+                return "AI Chat Controller is reachable!";
+        }
+
         @PostMapping("/ai-chat")
         public ResponseEntity<?> chat(@RequestBody Map<String, String> payload) {
+                if (chatService == null) {
+                        return ResponseEntity.status(500).body("AI Service is not initialized.");
+                }
+
                 String userPrompt = payload.get("prompt");
                 String sessionId = payload.getOrDefault("sessionId", "default-session");
 
