@@ -16,9 +16,13 @@ public class ToDoPlugin {
 
     public ToDoPlugin() {
         try {
-            this.conn = DriverManager.getConnection("jdbc:postgresql://localhost:5432/motivaitor", "worker", "pass");
+            this.conn = DriverManager.getConnection(
+                "jdbc:postgresql://localhost:5432/motivaitor",
+                "postgres",
+                "postgres"
+            );
         } catch (SQLException e) {
-            System.out.println("Unable to load the driver class.");
+            e.printStackTrace();
         }
     }
 
